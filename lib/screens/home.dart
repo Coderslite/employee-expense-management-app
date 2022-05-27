@@ -1,5 +1,8 @@
 import 'package:employee_expense_management/screens/home_screen.dart';
+import 'package:employee_expense_management/screens/profile.dart';
+import 'package:employee_expense_management/screens/transaction.dart';
 import 'package:flashy_tab_bar2/flashy_tab_bar2.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class Home extends StatefulWidget {
@@ -14,15 +17,25 @@ class _HomeState extends State<Home> {
 
   List<Widget> tabItems = [
     const HomeScreen(),
-    Center(child: Text("1")),
-    Center(child: Text("2")),
-    Center(child: Text("3")),
-    Center(child: Text("4"))
+    const ProfileScreen(),
+    // const Center(child: Text("1")),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.deepPurple,
+        onPressed: () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) {
+            return const TransactionScreen();
+          }));
+        },
+        child: const Icon(
+          Icons.add_task_outlined,
+        ),
+      ),
       bottomNavigationBar: FlashyTabBar(
         animationCurve: Curves.linear,
         selectedIndex: _selectedIndex,
@@ -32,25 +45,25 @@ class _HomeState extends State<Home> {
         }),
         items: [
           FlashyTabBarItem(
-            icon: Icon(Icons.event),
-            title: Text('Events'),
+            icon: const Icon(Icons.home_outlined),
+            title: const Text('Home'),
           ),
+          // FlashyTabBarItem(
+          //   icon: const Icon(Icons.list),
+          //   title: const Text('Expense'),
+          // ),
           FlashyTabBarItem(
-            icon: Icon(Icons.search),
-            title: Text('Search'),
+            icon: const Icon(CupertinoIcons.profile_circled),
+            title: const Text('Profile'),
           ),
-          FlashyTabBarItem(
-            icon: Icon(Icons.highlight),
-            title: Text('Highlights'),
-          ),
-          FlashyTabBarItem(
-            icon: Icon(Icons.settings),
-            title: Text('Settings'),
-          ),
-          FlashyTabBarItem(
-            icon: Icon(Icons.settings),
-            title: Text('한국어'),
-          ),
+          // FlashyTabBarItem(
+          //   icon: Icon(Icons.settings),
+          //   title: Text('Settings'),
+          // ),
+          // FlashyTabBarItem(
+          //   icon: Icon(Icons.settings),
+          //   title: Text('한국어'),
+          // ),
         ],
       ),
       body: tabItems[_selectedIndex],
