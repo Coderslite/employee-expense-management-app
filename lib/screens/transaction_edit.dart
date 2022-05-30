@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:datetime_picker_formfield/datetime_picker_formfield.dart';
+import 'package:employee_expense_management/screens/expense_screen.dart';
 import 'package:employee_expense_management/screens/home.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -13,18 +14,35 @@ import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 
-class TransactionScreen extends StatefulWidget {
-  const TransactionScreen({Key? key}) : super(key: key);
+class TransactionEditScreen extends StatefulWidget {
+  final String date;
+  final String amount;
+  final String merchant;
+  final String note;
+  final String receiptUrl;
+  final String receiptExt;
+  final String docID;
+  const TransactionEditScreen({
+    Key? key,
+    required this.amount,
+    required this.merchant,
+    required this.note,
+    required this.date,
+    required this.receiptUrl,
+    required this.receiptExt,
+    required this.docID,
+  }) : super(key: key);
 
   @override
-  State<TransactionScreen> createState() => _TransactionScreenState();
+  State<TransactionEditScreen> createState() => _TransactionEditScreenState();
 }
 
-class _TransactionScreenState extends State<TransactionScreen> {
-  var receiptUrl = '';
+class _TransactionEditScreenState extends State<TransactionEditScreen> {
   bool isLoading = false;
   Timer? _timer;
   final _formKey = GlobalKey<FormState>();
+
+  final format = DateFormat("yyyy-MM-dd");
   File? file;
   String? fileExtension;
   DateTime? date;
@@ -32,7 +50,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
   String? amount;
   String? merchant;
   String? note;
-  final format = DateFormat("yyyy-MM-dd");
+  var receiptUrl = '';
 
   final List<String> genderItems = [
     'Hotel',
@@ -56,7 +74,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.only(
-            top: 20.0,
+            top: 40.0,
             bottom: 100,
             left: 20,
             right: 20,
@@ -73,7 +91,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
                     icon: const Icon(Icons.arrow_back),
                   ),
                   const Text(
-                    "New Transaction",
+                    "Edit Transaction",
                     style: TextStyle(
                       fontSize: 25,
                       fontWeight: FontWeight.bold,
@@ -98,6 +116,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
                       //     // leadingSymbol: "NGN",
                       //   ),
                       // ],
+                      initialValue: widget.amount,
                       validator: FormBuilderValidators.compose([
                         FormBuilderValidators.required(context),
                         // FormBuilderValidators.numeric(context),
@@ -127,10 +146,12 @@ class _TransactionScreenState extends State<TransactionScreen> {
                     ),
                     const Text("Merchant"),
                     DropdownButtonFormField2(
+                      value: widget.merchant,
+                      selectedItemHighlightColor: Colors.deepPurple,
                       // validator: FormBuilderValidators.compose([
                       //   FormBuilderValidators.required(context),
                       // ]),
-                      selectedItemHighlightColor: Colors.deepPurple,
+
                       decoration: InputDecoration(
                         border: OutlineInputBorder(
                             borderSide: const BorderSide(
@@ -184,6 +205,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
                     const Text("Date"),
                     DateTimeField(
                       format: format,
+                      // initialValue: DateTime.parse(widget.date.toString()),
                       onShowPicker: (context, currentValue) async {
                         final date = await showDatePicker(
                             context: context,
@@ -224,6 +246,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
                     ),
                     const Text("Note"),
                     TextFormField(
+                      initialValue: widget.note,
                       keyboardType: TextInputType.text,
                       validator: FormBuilderValidators.compose([
                         FormBuilderValidators.required(context),
@@ -260,10 +283,12 @@ class _TransactionScreenState extends State<TransactionScreen> {
                       onTap: () {
                         pickFile();
                       },
-                      child: file == null
+                      child: widget.receiptUrl == ''
                           ? const Text("Click to attach a receipt (optional)")
-                          : fileExtension == 'jpg'
-                              ? Image.file(file!)
+                          : widget.receiptExt == 'jpg'
+                              ? file == null
+                                  ? Image.network(widget.receiptUrl)
+                                  : Image.file(file!)
                               : Row(children: [
                                   Image.asset(
                                     'assets/images/profile-img.jpg',
@@ -282,8 +307,12 @@ class _TransactionScreenState extends State<TransactionScreen> {
                 borderRadius: BorderRadius.circular(15),
                 child: MaterialButton(
                   onPressed: () async {
+                    _formKey.currentState!.save();
+
                     handleAddExpense(amount.toString(), merchant.toString(),
                         date!, note.toString(), file.toString());
+                    // _formKey.currentState!.save();
+                    // print(file);
                   },
                   child: Padding(
                     padding: const EdgeInsets.all(14.0),
@@ -292,7 +321,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
                             color: Colors.white,
                           )
                         : const Text(
-                            "Save",
+                            "Update Expense",
                             style: TextStyle(color: Colors.white, fontSize: 20),
                           ),
                   ),
@@ -333,11 +362,13 @@ class _TransactionScreenState extends State<TransactionScreen> {
   handleAddExpense(String amount, String merchant, DateTime date, String note,
       String receipt) async {
     if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
+      // _formKey.currentState!.save();
       setState(() {
         isLoading = true;
       });
-      if (file != null) {
+      if (file != null && widget.receiptUrl != '') {
+        _formKey.currentState!.save();
+
         firebase_storage.Reference ref = firebase_storage
             .FirebaseStorage.instance
             .ref('expense/')
@@ -353,27 +384,29 @@ class _TransactionScreenState extends State<TransactionScreen> {
           'merchant': merchant,
           'date': newDate,
           'note': note,
-          'receipt': receiptUrl,
-          "receiptExt": fileExtension,
+          'receipt': receiptUrl
         };
         FirebaseFirestore.instance
             .collection("expense")
-            .doc()
-            .set(expense)
+            .doc(widget.docID)
+            .update(expense)
             .then((value) async {
           setState(() {
             isLoading = false;
           });
           _timer?.cancel();
-          await EasyLoading.showSuccess('Expense Added').whenComplete(() {
+          await EasyLoading.showSuccess('Expense Updated Successfully')
+              .whenComplete(() {
             Navigator.push(context, MaterialPageRoute(builder: (_) {
               return Home();
             }));
           });
-
           print('data added');
         });
       } else {
+        setState(() {
+          isLoading = false;
+        });
         var newDate = DateFormat('EEE, M/d/y').format(date);
         // print(expense);
         Map<String, dynamic> expense = {
@@ -381,26 +414,26 @@ class _TransactionScreenState extends State<TransactionScreen> {
           'merchant': merchant,
           'date': newDate,
           'note': note,
-          'receipt': '',
-          "receiptExt": '',
         };
         FirebaseFirestore.instance
             .collection("expense")
-            .doc()
-            .set(expense)
+            .doc(widget.docID)
+            .update(expense)
             .then((value) async {
           setState(() {
             isLoading = false;
           });
           _timer?.cancel();
-          await EasyLoading.showSuccess('Expense Added').whenComplete(() {
+          await EasyLoading.showSuccess('Expense Updated Successfully')
+              .whenComplete(() {
             Navigator.push(context, MaterialPageRoute(builder: (_) {
-              return Home();
+              return const ExpenseScreen();
             }));
           });
 
           print('data added');
         });
+        // print(expense);
       }
     }
   }

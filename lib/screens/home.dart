@@ -32,9 +32,7 @@ class _HomeState extends State<Home> {
             return const TransactionScreen();
           }));
         },
-        child: const Icon(
-          Icons.add_task_outlined,
-        ),
+        child: const Icon(Icons.add_to_queue_outlined),
       ),
       bottomNavigationBar: FlashyTabBar(
         animationCurve: Curves.linear,
@@ -50,7 +48,7 @@ class _HomeState extends State<Home> {
           ),
           // FlashyTabBarItem(
           //   icon: const Icon(Icons.list),
-          //   title: const Text('Expense'),
+          //   title: const Text(''),
           // ),
           FlashyTabBarItem(
             icon: const Icon(CupertinoIcons.profile_circled),

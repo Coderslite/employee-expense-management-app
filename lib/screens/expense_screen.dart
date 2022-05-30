@@ -1,3 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:employee_expense_management/screens/transaction_edit.dart';
+import 'package:employee_expense_management/screens/view_full_imgae.dart';
 import 'package:flutter/material.dart';
 import 'package:horizontal_data_table/horizontal_data_table.dart';
 
@@ -39,50 +42,60 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
         left: 20,
         right: 20,
       ),
-      child: HorizontalDataTable(
-        leftHandSideColumnWidth: 100,
-        rightHandSideColumnWidth: 800,
-        isFixedHeader: true,
-        headerWidgets: _getTitleWidget(),
-        leftSideItemBuilder: _generateFirstColumnRow,
-        rightSideItemBuilder: _generateRightHandSideColumnRow,
-        itemCount: user.userInfo.length,
-        rowSeparatorWidget: const Divider(
-          color: Colors.black54,
-          height: 1.0,
-          thickness: 0.0,
-        ),
-        leftHandSideColBackgroundColor: Color(0xFFFFFFFF),
-        rightHandSideColBackgroundColor: Color(0xFFFFFFFF),
-        verticalScrollbarStyle: const ScrollbarStyle(
-          thumbColor: Colors.yellow,
-          isAlwaysShown: true,
-          thickness: 4.0,
-          radius: Radius.circular(5.0),
-        ),
-        horizontalScrollbarStyle: const ScrollbarStyle(
-          thumbColor: Colors.red,
-          isAlwaysShown: true,
-          thickness: 4.0,
-          radius: Radius.circular(5.0),
-        ),
-        enablePullToRefresh: true,
-        refreshIndicator: const WaterDropHeader(),
-        refreshIndicatorHeight: 60,
-        onRefresh: () async {
-          //Do sth
-          await Future.delayed(const Duration(milliseconds: 500));
-          _hdtRefreshController.refreshCompleted();
-        },
-        enablePullToLoadNewData: true,
-        loadIndicator: const ClassicFooter(),
-        onLoad: () async {
-          //Do sth
-          await Future.delayed(const Duration(milliseconds: 500));
-          _hdtRefreshController.loadComplete();
-        },
-        htdRefreshController: _hdtRefreshController,
-      ),
+      child: StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance.collection("expense").snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return const Text("Something went wrong");
+            }
+            if (snapshot.hasData) {
+              return HorizontalDataTable(
+                leftHandSideColumnWidth: 100,
+                rightHandSideColumnWidth: 800,
+                isFixedHeader: true,
+                headerWidgets: _getTitleWidget(),
+                leftSideItemBuilder: _generateFirstColumnRow,
+                rightSideItemBuilder: _generateRightHandSideColumnRow,
+                itemCount: snapshot.data!.docs.length,
+                rowSeparatorWidget: const Divider(
+                  color: Colors.black54,
+                  height: 1.0,
+                  thickness: 0.0,
+                ),
+                leftHandSideColBackgroundColor: Color(0xFFFFFFFF),
+                rightHandSideColBackgroundColor: Color(0xFFFFFFFF),
+                verticalScrollbarStyle: const ScrollbarStyle(
+                  thumbColor: Colors.yellow,
+                  isAlwaysShown: true,
+                  thickness: 4.0,
+                  radius: Radius.circular(5.0),
+                ),
+                horizontalScrollbarStyle: const ScrollbarStyle(
+                  thumbColor: Colors.red,
+                  isAlwaysShown: true,
+                  thickness: 4.0,
+                  radius: Radius.circular(5.0),
+                ),
+                enablePullToRefresh: true,
+                refreshIndicator: const WaterDropHeader(),
+                refreshIndicatorHeight: 60,
+                onRefresh: () async {
+                  //Do sth
+                  await Future.delayed(const Duration(milliseconds: 500));
+                  _hdtRefreshController.refreshCompleted();
+                },
+                enablePullToLoadNewData: true,
+                loadIndicator: const ClassicFooter(),
+                onLoad: () async {
+                  //Do sth
+                  await Future.delayed(const Duration(milliseconds: 500));
+                  _hdtRefreshController.loadComplete();
+                },
+                htdRefreshController: _hdtRefreshController,
+              );
+            }
+            return const Text("Loading .....");
+          }),
       height: MediaQuery.of(context).size.height,
     );
   }
@@ -118,9 +131,10 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
           setState(() {});
         },
       ),
-      _getTitleItemWidget('Total', 200),
+      _getTitleItemWidget('Total', 120),
       _getTitleItemWidget('Status', 100),
-      _getTitleItemWidget('Comment', 400),
+      _getTitleItemWidget('Comment', 300),
+      _getTitleItemWidget('view image', 100),
     ];
   }
 
@@ -135,58 +149,127 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   }
 
   Widget _generateFirstColumnRow(BuildContext context, int index) {
-    return Container(
-      child: Text(user.userInfo[index].date),
-      width: 100,
-      height: 52,
-      padding: EdgeInsets.fromLTRB(5, 0, 0, 0),
-      alignment: Alignment.centerLeft,
-    );
+    return StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance.collection('expense').snapshots(),
+        builder: (context, dateSnapshot) {
+          if (dateSnapshot.hasError) {
+            return const Text("Something went wrong");
+          }
+          if (dateSnapshot.hasData) {
+            return Container(
+              child: Text(dateSnapshot.data!.docs[index]['date']),
+              width: 100,
+              height: 52,
+              padding: EdgeInsets.fromLTRB(5, 0, 0, 0),
+              alignment: Alignment.centerLeft,
+            );
+          }
+          return const Text("Loading..");
+        });
   }
 
   Widget _generateRightHandSideColumnRow(BuildContext context, int index) {
-    return Row(
-      children: <Widget>[
-        Container(
-          child: Row(
-            children: <Widget>[
-              // Icon(
-              //     user.userInfo[index].merchant
-              //         ? Icons.notifications_off
-              //         : Icons.notifications_active,
-              //     color:
-              //         user.userInfo[index].merchant ? Colors.red : Colors.green),
-              Text('Hotel')
-            ],
-          ),
-          width: 100,
-          height: 52,
-          padding: EdgeInsets.fromLTRB(5, 0, 0, 0),
-          alignment: Alignment.centerLeft,
-        ),
-        Container(
-          child: Text('381.22'),
-          width: 200,
-          height: 52,
-          padding: EdgeInsets.fromLTRB(5, 0, 0, 0),
-          alignment: Alignment.centerLeft,
-        ),
-        Container(
-          child: Text('Reimbursed'),
-          width: 100,
-          height: 52,
-          padding: EdgeInsets.fromLTRB(5, 0, 0, 0),
-          alignment: Alignment.centerLeft,
-        ),
-        Container(
-          child: Text('Expense from my business trip.'),
-          width: 400,
-          height: 52,
-          padding: EdgeInsets.fromLTRB(5, 0, 0, 0),
-          alignment: Alignment.centerLeft,
-        ),
-      ],
-    );
+    return StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance.collection('expense').snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Text("Something went wrong");
+          }
+
+          if (snapshot.hasData) {
+            if (snapshot.data!.docs == null ||
+                snapshot.data!.size == 0 ||
+                snapshot.data!.docs.isEmpty) {
+              return Text("no data found");
+            }
+            var data = snapshot.data!.docs[index];
+
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) {
+                  return TransactionEditScreen(
+                    amount: data['amount'],
+                    merchant: data['merchant'],
+                    note: data['note'],
+                    date: data['date'],
+                    receiptUrl: data['receipt'],
+                    receiptExt: data['receiptExt'],
+                    docID: data.id,
+                  );
+                }));
+              },
+              child: Row(
+                children: [
+                  Container(
+                    child: Row(
+                      children: <Widget>[
+                        // Icon(
+                        //     user.userInfo[index].merchant
+                        //         ? Icons.notifications_off
+                        //         : Icons.notifications_active,
+                        //     color:
+                        //         user.userInfo[index].merchant ? Colors.red : Colors.green),
+                        Text(data['merchant'])
+                      ],
+                    ),
+                    width: 100,
+                    height: 52,
+                    padding: const EdgeInsets.fromLTRB(5, 0, 0, 0),
+                    alignment: Alignment.centerLeft,
+                  ),
+                  Container(
+                    child: Text(
+                      "NGN " + (data['amount']),
+                    ),
+                    width: 120,
+                    height: 52,
+                    padding: EdgeInsets.fromLTRB(5, 0, 0, 0),
+                    alignment: Alignment.centerLeft,
+                  ),
+                  Container(
+                    child: Text('Reimbursed'),
+                    width: 100,
+                    height: 52,
+                    padding: EdgeInsets.fromLTRB(5, 0, 0, 0),
+                    alignment: Alignment.centerLeft,
+                  ),
+                  Container(
+                    child: Text(data['note']),
+                    width: 300,
+                    height: 52,
+                    padding: EdgeInsets.fromLTRB(5, 0, 0, 0),
+                    alignment: Alignment.centerLeft,
+                  ),
+                  Container(
+                    child: data['receipt'] == ''
+                        ? GestureDetector(
+                            onTap: () {
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(const SnackBar(
+                                duration: Duration(seconds: 4),
+                                content: Text("No Receipt Available "),
+                              ));
+                            },
+                            child: const Text("No Receipt Available"))
+                        : GestureDetector(
+                            onTap: () {
+                              Navigator.push(context,
+                                  MaterialPageRoute(builder: (_) {
+                                return ViewFullImage(image: data['receipt']);
+                              }));
+                            },
+                            child: Image.network(data['receipt'])),
+                    width: 100,
+                    height: 52,
+                    padding: EdgeInsets.fromLTRB(5, 0, 0, 0),
+                    alignment: Alignment.centerLeft,
+                  ),
+                ],
+              ),
+            );
+          }
+          return const Text("Loading ......");
+        });
   }
 }
 
