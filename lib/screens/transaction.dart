@@ -56,7 +56,7 @@ class _TransactionScreenState extends State<TransactionScreen> {
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.only(
-            top: 20.0,
+            top: 40.0,
             bottom: 100,
             left: 20,
             right: 20,
